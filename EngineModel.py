@@ -1,75 +1,122 @@
 #!/usr/bin/python
 
-#####################################################
+###########################################################
 # A model to describe an internal combustion engine.
 # All units in Metric/SI.
 # Author: Collin Murphy
 # email: cbmurphy87@gmail.com
 # Date Created: 6.15.2015
 # Last Modified: 6.24.2015
-#####################################################
+###########################################################
 
-# ================== standard imports =================
+# ================= standard imports ======================
+
+import sys
+
+# ================== custom imports =======================
 
 from camshaft import Camshaft
+from crankshaft import Crankshaft
+from cylinderhead import CylinderHead
+from piston import Piston
 
-# ================== custom methods  ==================
-
-def avg(*args):
-    return sum(args) / len(args)
-
-# ===================== classes ========================
+# ===================== classes ===========================
 
 class Engine(object):
-    def __init__(self, number_cylinder, bore, stroke, firing_order):
+
+    """
+    Class for an Internal Combustion Engine (I.C.E.).
+    The following units are used, unless noted otherwise:
+        rotational angle: entered in degrees, but converted to rad
+        rotational velocity: radians per second (rad/s)
+        rotational acceleration: radians per second ^ 2 (rad/s^2)
+        length: millimeters (mm)
+        volume: cubic centimeters (cc)
+        temperature: Kelvin (K)
+    """
+
+    def __init__(self, bore, stroke, firing_order, **kwargs):
+
+        """
+        Initialize an Engine instance
+
+        :param number_cylinder: number of cylinders
+        :param bore: bore in mm
+        :param stroke: stroke in mm
+        :param firing_order: firing order of cylinders
+        :param cam_lift: cam lift in mm
+        :param cam_duration: cam duration in crankshaft degrees
+        :param cam_overlap: cam overlap in crankshaft degrees
+        """
+
         super(Engine, self).__init__()
-        self.number_cylinders
+        self.run = False
+        self.number_cylinders = len(firing_order)
         self.bore = bore
         self.stroke = stroke
         self.firing_order = firing_order
         self.operating_temp = 366  # degrees Kelvin
 
+        ################# initialize engine components ###############
 
-class Crankshaft(object):
-    def __init__(self, stroke, mass, main_diameter, rod_diameter):
-        super(Camshaft, self).__init__()
-        self.stroke = stroke
-        self.mass = mass
-        self.main_diameter = main_diameter
-        self.rod_diameter = rod_diameter
+        # define requirements
+        requirements = {
+            'camshaft': {'lift', 'duration'},
+            'crankshaft': {'main_diameter', 'rod_diameter', 'mass', 'moment'},
+            'piston': {'diameter', 'mass', 'pin_height'}
+        }
+        # gather other parameters
+        engine_parameters = {
+            'number_cylinders': self.number_cylinders,
+            'bore': bore,
+            'stroke': stroke,
+            'firing_order': firing_order
+        }
+        # check each component and its requirements
+        for component, requires in requirements.items():
+            if component in kwargs:
+                missing = set(kwargs.get(component, {})).difference(requires)
+                if missing:
+                    print 'Must provide%s for %s' % (', '.join(missing),
+                                                     component)
+                    sys.exit()
 
+        cam_kwargs = kwargs.get('camshaft')
+        cam_kwargs.update({'firing_order':engine_parameters['firing_order']})
+        self.camshaft = Camshaft(**cam_kwargs)
+        return
+        self.crankshaft = Crankshaft(**kwargs.get('crankshaft', None))
+        self.piston = Piston(**kwargs.get('piston', None))
 
-class Piston(object):
-    '''
-    Class for an engine piston. Alpha is the coefficient of thermal expansion,
-    measured in 10^-6mm/K.
-    '''
-
-    def __init__(self, diameter, pin_height, alpha=22.2):
-        super(Piston, self).__init__()
-        self.diameter = diameter  # diameter at STP of 273.15 degrees Kelvin
-        self.pin_height = pin_height
-
-
-class CylinderHead(object):
-    ''' Model an engine cylinder head '''
-
-    def __init__(self, number_cylinders, number_valves):
-        super(CylinderHead, self).__init__()
-        self.number_cylinders = num_cyls
-        self.number_valves = number_valves
-        self.combustion_chamber_vol = combustion_chamber_volume
-
+    def _hidden_method(self):
+        print 'You found me!'
 
 def main():
 
-    cam = Camshaft(11.3, 294.0, (1, 5, 3, 6, 2, 4))
-    print cam.firing_order
-    print cam.start_lift
-    print 'Degrees: lift (mm)'
+    camshaft = {
+        'lift': 11.3,
+        'duration': 294
+    }
+    crankshaft = {
+        'main_diameter': 45,
+        'rod_diameter': 30,
+        'mass': 10000,
+        'moment': 500,
+    }
+    piston = {
+        'diameter': 86.5,
+        'mass': 350,
+        'pin_height': 30
+    }
 
+    engine = Engine(bore=86.5, stroke=86.5, firing_order=(1,5,6,3,4,2),
+                    camshaft=camshaft, crankshaft=crankshaft,
+                    piston=piston)
+
+    print dir(engine)
+    print engine._hidden_method()
     for crank_deg in range(0, 720 + 1, 10):
-        lift = cam.get_lift(crank_deg, 1)
+        lift = engine.camshaft.get_lift(crank_deg, 1)
         print '%4s: %s %s' % (crank_deg, '#' * int(round(lift)), lift)
 
 if __name__ == '__main__':

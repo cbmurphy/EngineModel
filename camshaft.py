@@ -1,37 +1,39 @@
 #!/usr/bin/python
 
-#####################################################
-# A model to describe an ICE camshaft
+###########################################################
+# A model to describe an I.C.E. camshaft
 # All units in Metric/SI.
 # Author: Collin Murphy
 # email: cbmurphy87@gmail.com
 # Date Created: 6.15.2015
 # Last Modified: 6.24.2015
-#####################################################
+###########################################################
 
-# ================== standard imports =================
+# ================= standard imports ======================
 
 from math import sin, pi, radians as rad
+import sys
 
-# ================== custom methods  ==================
+# ================== custom imports  ======================
 
-def avg(*args):
-    return sum(args) / len(args)
+from enginemethods import *
 
-# ===================== classes ========================
+# ===================== classes ===========================
 
 class Camshaft(object):
 
     """
-    Class to describe an engine camshaft.
+    Class for an I.C.E. camshaft.
     All units of rotational angle are entered in degrees, but are converted
-     to rad for computations.
-    All units of length are in mm
+     to radians for computations.
+    All units of length are in mm.
     """
 
     def __init__(self, lift, duration, firing_order, advance=0):
 
         """
+        Initialize a Camshaft instance
+
         :param lift: camshaft lift measured in mm
         :param duration: crank degrees between valve opening and closing
         :param firing_order: list of cylinder numbers in order of firing pattern
@@ -52,9 +54,8 @@ class Camshaft(object):
 
         # run methods to solve for parameters
         self.solve_amplitude()
-        self.set_lift_points()
 
-    def solve_amplitude(self, error=0.01):
+    def solve_amplitude(self, error=0.001):
 
         """
         Solve for the amplitude of the sin curve to describe cam lift
@@ -79,13 +80,15 @@ class Camshaft(object):
                 high = mid
         else:
             print 'Could not solve for amplitude'
+            sys.exit()
 
         self.amplitude = mid
 
     def get_lift(self, crank_degrees, cylinder_number):
 
         """
-        Get valve lift in mm at camshaft degrees for cylinder number cylinder_number.
+        Get valve lift in mm at camshaft degrees for cylinder number
+        cylinder_number.
 
         :param crank_degrees: degrees of crankshaft where lift is to be found
         :param cylinder_number: number of cylinder of which to find lift
@@ -101,9 +104,9 @@ class Camshaft(object):
         crank_degrees %= 720
         crank_rad = rad(crank_degrees)
 
-        return max(0, self.amplitude * sin(.5 * (crank_rad + pi - self.duration / 2
-                    - self.start_lift[cylinder_number - 1] - self.advance))
-                    - (self.amplitude - self.lift))
+        return max(0, self.amplitude * sin(.5 * (crank_rad + pi -
+                    self.duration / 2- self.start_lift[cylinder_number - 1] -
+                    self.advance)) - (self.amplitude - self.lift))
 
 
 def main():
